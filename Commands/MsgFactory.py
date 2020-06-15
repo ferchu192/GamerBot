@@ -1,0 +1,1 @@
+# EL MsgFactory esta para crear mensajes para retornar a los usuarios
