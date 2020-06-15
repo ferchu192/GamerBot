@@ -2,31 +2,38 @@
 # y estado de la partida. Ademas de la comunicacion con el servidor, con los mensajes a retornar.
 # Esta clase será la base de los Rooms 
 
-import MsgFactory
+from Auxiliar import Comando
+from Auxiliar import MsgFactory
 
 class Room:
 
-    def _init_(self, id, cant, server):
-        self.idRoom = id
+    def _init_(self, idR, cant, server):
+        self.idRoom = idR
         self.state = "Free"
         self.cantPlayers = cant
         self.players = [self.cantPlayers]
         self.currentPlayers = 0
         self.maxPenalties = 5
         self.srv = server
-        self.managerMsg = MsgFactory()
+        self.managerMsg = MsgFactory(idR)
         self.turn = 0 # Al igual que en LOR el turn aumenta cada vez que se tira una carta
         self.historyPlayer = []
         self.historyPlay = []
 
     # Este metodo se encarga de agregar un nuevo jugador al Room
     def addPlayer(username):
-        player = Player(username,self.idRoom)
-        self.players[self.currentPlayers] = player
-        self.currentPlayers = self.currentPlayers + 1
-        
-        if (self.currentPlayers == self.cantPlayers):
-            self.state = "Full"
+        message = ""
+        if(self.state != "Full"):
+            player = Player(username,self.idRoom)
+            self.players[self.currentPlayers] = player
+            self.currentPlayers = self.currentPlayers + 1
+            
+            if (self.currentPlayers == self.cantPlayers):
+                self.state = "Full"
+            message = managerMsg.addPlayer()
+        else:
+            message = managerMsg.fullRoom()
+        srv.sendMsg(username,message)
 
     # Este metodo es el cual recibe los mensajes del servidor
     def reciveMsg(Msg):
@@ -69,12 +76,17 @@ class Room:
             # ACA DEBE IR LA LOGICA DE EVALUAR SI ES O NO UN COMANDO
             return True
     
-    # Este metodo se encarga de aplicar la penalizacion a un jugador
+    # Este metodo se encarga de aplicar la penalizacion a un jugador y el status final al irse
     def penaltyPlayer(player):
         cantPenalty = player.penalty()
         if (cantPenalty == self.maxPenalties):
-            message = managerMsg.leave()
-            srv.sendMsg(player.username,message)
+            msgLeave = managerMsg.leave(player.username)
+            status = self.game.status()
+            msgStatus = managerMsg.status(status)
+            # Notificar a todos demas jugadores
+            for p in self.players:
+                srv.sendMsg(p.username,msgLeave)
+                srv.sendMsg(p.username,msgStatus)
             srv.cleanRoom(idRoom)
         else:
             message = managerMsg.warning()
@@ -93,15 +105,13 @@ class Room:
             gameOver = self.game.playCard(player,play)
             if (gameOver):
                 # El juego termino y notifico a cada jugador que gano y limpio el Room
-                i = 0
-                size = len(self.players)
-                message = self.managerMsg.endGame(player.username) # Crea un mensaje con el ganador del juego
-                while (i != size):
-                    p = self.players[i]
-                    srv.sendMsg(p.username,message)
-                    i++
+                status = self.game.status()
+                msgStatus = self.managerMsg.status(status)
+                msgWinner = self.managerMsg.winner(player.username) # Crea un mensaje con el ganador del juego
+                for p in self.players:
+                    srv.sendMsg(p.username,msgStatus)
+                    srv.sendMsg(p.username,msgWinner)
                 srv.cleanRoom(idRoom)
-                
             else:
                 self.turn++
         else:
