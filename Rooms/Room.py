@@ -2,7 +2,6 @@
 # y estado de la partida. Ademas de la comunicacion con el servidor, con los mensajes a retornar.
 # Esta clase será la base de los Rooms 
 
-from Auxiliar import Comando
 from Auxiliar import MsgFactory
 
 class Room:
@@ -19,6 +18,12 @@ class Room:
         self.turn = 0 # Al igual que en LOR el turn aumenta cada vez que se tira una carta
         self.historyPlayer = []
         self.historyPlay = []
+        # Instanciar los Comandos
+        c1 = "/play"
+        c2 = "/help"
+        c3 = "/status"
+        c4 = "/history"
+        self.commands = [c1: playCommand(card),c2: helpCommand(),c3: statusCommand(),c4: historyCommand()]
 
     # Este metodo se encarga de agregar un nuevo jugador al Room
     def addPlayer(username):
@@ -37,14 +42,29 @@ class Room:
 
     # Este metodo es el cual recibe los mensajes del servidor
     def reciveMsg(Msg):
-        sender = Msg.username
-        player = self.searchPlayer(sender)
-        play = Msg.text
-        itsValidPlay = self.validMsg(Msg)
-        if not(itsValidPlay):
+        valid = self.validMsg(Msg)
+        if not(valid):
             self.penaltyPlayer(player)
+
+    # El ojetivo de esta funcion es la de validar el mensaje Msg y en caso de ser un Comando lo ejecuta
+    # Return: True (si todo funciono) - False (si algo fallo)
+    def validMsg(Msg):
+        sender = Msg.username
+        text = Msg.text
+        end = False
+        player
+        i = 0
+        # Chequeo que el mensaje proviene de un usuario que esta en la sala
+        existPlayer = self.searchPlayer(sender)
+        if (existPlayer == NULL)
+            return False
         else:
-            self.playCard(player,play)
+            # ACA DEBE IR LA LOGICA DE EVALUAR SI ES O NO UN COMANDO
+            comando = self.searchCommand(text)
+            if(comando == NULL):
+                return False
+            else:
+                return comando
 
     # Busca a partir de un username(String) el Player
     def searchPlayer(sender):
@@ -55,26 +75,29 @@ class Room:
             player = self.players[i]
             if(player.name == sender):
                 end = True
-            i++
+            i = i + 1
         if end:
             return player
         else:
             return NULL
 
-    # El ojetivo de esta funcion es la de validar el mensaje Msg
-    def validMsg(Msg):
-        sender = Msg.username
-        play = Msg.text
-        end = False
-        player
+    # Busca a partir del texto(String) el Comando al que corresponde
+    # Return: True (si todo funciono) - False (si algo fallo)
+    def searchCommand(text):
         i = 0
-        # Chequeo que el mensaje proviene de un usuario que esta en la sala
-        existPlayer = self.searchPlayer(sender)
-        if (existPlayer == NULL)
+        size = len(self.commands)
+        end = False
+        command = ""
+        args = text.split()
+        arg0 = args[0]
+        try:
+            if (args == "/play"):
+                arg1 = args[1]
+                return self.commands[arg0](arg1)
+            else:
+                return self.commands[arg0]
+        except:
             return False
-        else:
-            # ACA DEBE IR LA LOGICA DE EVALUAR SI ES O NO UN COMANDO
-            return True
     
     # Este metodo se encarga de aplicar la penalizacion a un jugador y el status final al irse
     def penaltyPlayer(player):
@@ -113,10 +136,11 @@ class Room:
                     srv.sendMsg(p.username,msgWinner)
                 srv.cleanRoom(idRoom)
             else:
-                self.turn++
+                self.turn = self.turn + 1
         else:
             self.penaltyPlayer(player)
-
+    
+# ------------------------ METODOS DE COMANDOS ------------------------
 
 
 

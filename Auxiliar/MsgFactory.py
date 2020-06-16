@@ -33,5 +33,8 @@ class MsgFactory:
     def winner(username):
         return "El jugador: "+username+" es el ganador de la partida."
 
+    def successPlay():
+        return "La jugada "
+
 
 
