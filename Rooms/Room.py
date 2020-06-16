@@ -24,7 +24,7 @@ class Room:
         c3 = "/status"
         c4 = "/history"
         c5 = "/rules"
-        self.commands = [c1: playCommand(), c2: helpCommand(), c3: statusCommand(), c4: historyCommand(), c5: rulesCommand()]
+        self.commands = {c1: playCommand(), c2: helpCommand(), c3: statusCommand(), c4: historyCommand(), c5: rulesCommand()}
 
     # Este metodo se encarga de agregar un nuevo jugador al Room
     def addPlayer(username):
@@ -53,7 +53,6 @@ class Room:
         sender = Msg.username
         text = Msg.text
         end = False
-        player
         i = 0
         # Chequeo que el mensaje proviene de un usuario que esta en la sala
         existPlayer = self.searchPlayer(sender)
@@ -74,7 +73,7 @@ class Room:
         player = ""
         while ((i != self.cantPlayers) and (not end)):
             player = self.players[i]
-            if(player.name == sender):
+            if(player.username == sender):
                 end = True
             i = i + 1
         if end:
@@ -120,6 +119,7 @@ class Room:
 
     # Este metodo implementa el comando de /play card
     # Realiza la jugada actualizando los historiales, y aplicando la jugada al jugador y al juego
+    # Play: String Ej: 3E (3 de espada), 12C (12 de copa), 1E (1 de espada)
     def playCommand(player,play):
         validPlay = player.playCard(play)
 
