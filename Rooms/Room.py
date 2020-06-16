@@ -23,7 +23,8 @@ class Room:
         c2 = "/help"
         c3 = "/status"
         c4 = "/history"
-        self.commands = [c1: playCommand(card),c2: helpCommand(),c3: statusCommand(),c4: historyCommand()]
+        c5 = "/rules"
+        self.commands = [c1: playCommand(), c2: helpCommand(), c3: statusCommand(), c4: historyCommand(), c5: rulesCommand()]
 
     # Este metodo se encarga de agregar un nuevo jugador al Room
     def addPlayer(username):
@@ -60,7 +61,7 @@ class Room:
             return False
         else:
             # ACA DEBE IR LA LOGICA DE EVALUAR SI ES O NO UN COMANDO
-            comando = self.searchCommand(text)
+            comando = self.searchCommand(sender,text)
             if(comando == NULL):
                 return False
             else:
@@ -83,7 +84,7 @@ class Room:
 
     # Busca a partir del texto(String) el Comando al que corresponde
     # Return: True (si todo funciono) - False (si algo fallo)
-    def searchCommand(text):
+    def searchCommand(sender,text):
         i = 0
         size = len(self.commands)
         end = False
@@ -93,9 +94,9 @@ class Room:
         try:
             if (args == "/play"):
                 arg1 = args[1]
-                return self.commands[arg0](arg1)
+                return self.commands[arg0](sender,arg1)
             else:
-                return self.commands[arg0]
+                return self.commands[arg0](sender)
         except:
             return False
     
@@ -115,10 +116,13 @@ class Room:
             message = managerMsg.warning()
             srv.sendMsg(player.username,message)
 
+    # ------------------------------------------------  METODOS DE COMANDOS ------------------------------------------------
+
+    # Este metodo implementa el comando de /play card
     # Realiza la jugada actualizando los historiales, y aplicando la jugada al jugador y al juego
-    def playCard(player,play):
+    def playCommand(player,play):
         validPlay = player.playCard(play)
-        
+
         if (validPlay):
             h = self.historyPlayer
             self.historyPlayer.insert(len(h),player)
@@ -139,8 +143,29 @@ class Room:
                 self.turn = self.turn + 1
         else:
             self.penaltyPlayer(player)
+
+    # Este metodo implementa el comando de /help
+    def helpCommand(username):
+        message = self.managerMsg.helpTruco()
+        srv.sendMsg(username,message)
+        return True
+
+    # Este metodo implementa el comando /status
+    def statusCommand(username):
+        message = self.game.status()
+        srv.sendMsg(username,message)
+        return True
     
-# ------------------------ METODOS DE COMANDOS ------------------------
+    # Este metodo implementa el comando /history
+    def historyCommand(username):
+        srv.sendMsg(username,self.history)
+        return True
+    
+    # Este metodo implementa el comando /rules
+    def rulesCommand(username):
+        rules = self.game.rules()
+        srv.sendMsg(username,rules)
+        return True
 
 
 
