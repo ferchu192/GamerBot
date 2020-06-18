@@ -34,7 +34,6 @@ class MsgFactory:
         return "El jugador: "+username+" es el ganador de la partida."
 
     def successPlay():
-        return "La jugada "
-
+        return "La jugada fue realizada con exito"
 
 

@@ -12,19 +12,17 @@ class Room:
         self.cantPlayers = cant
         self.players = [self.cantPlayers]
         self.currentPlayers = 0
-        self.maxPenalties = 5
         self.srv = server
+        self.game = Game()
         self.managerMsg = MsgFactory(idR)
         self.turn = 0 # Al igual que en LOR el turn aumenta cada vez que se tira una carta
-        self.historyPlayer = []
-        self.historyPlay = []
         # Instanciar los Comandos
-        c1 = "/play"
+        c1 = "/ready"
         c2 = "/help"
         c3 = "/status"
         c4 = "/history"
         c5 = "/rules"
-        self.commands = {c1: playCommand(), c2: helpCommand(), c3: statusCommand(), c4: historyCommand(), c5: rulesCommand()}
+        self.commands = {c1: readyCommand(), c2: helpCommand(), c3: statusCommand(), c4: historyCommand(), c5: rulesCommand()}
 
     # Este metodo se encarga de agregar un nuevo jugador al Room
     def addPlayer(username):
@@ -39,7 +37,7 @@ class Room:
             message = managerMsg.addPlayer()
         else:
             message = managerMsg.fullRoom()
-        srv.sendMsg(username,message)
+        self.srv.sendMsg(username,message)
 
     # Este metodo es el cual recibe los mensajes del servidor
     def reciveMsg(Msg):
@@ -60,11 +58,12 @@ class Room:
             return False
         else:
             # ACA DEBE IR LA LOGICA DE EVALUAR SI ES O NO UN COMANDO
-            comando = self.searchCommand(sender,text)
-            if(comando == NULL):
-                return False
+            command = self.searchCommand(sender,text)
+            if(command == NULL):
+                gameCommand = self.game.executeCommand(text)
+                return gameCommand
             else:
-                return comando
+                return command
 
     # Busca a partir de un username(String) el Player
     def searchPlayer(sender):
@@ -91,80 +90,52 @@ class Room:
         args = text.split()
         arg0 = args[0]
         try:
-            if (args == "/play"):
-                arg1 = args[1]
-                return self.commands[arg0](sender,arg1)
-            else:
-                return self.commands[arg0](sender)
+            return self.commands[arg0](sender)
         except:
             return False
-    
-    # Este metodo se encarga de aplicar la penalizacion a un jugador y el status final al irse
+
+    # Notifica a los Jugadores de una Pelanlizacion
     def penaltyPlayer(player):
-        cantPenalty = player.penalty()
-        if (cantPenalty == self.maxPenalties):
-            msgLeave = managerMsg.leave(player.username)
-            status = self.game.status()
-            msgStatus = managerMsg.status(status)
-            # Notificar a todos demas jugadores
-            for p in self.players:
-                srv.sendMsg(p.username,msgLeave)
-                srv.sendMsg(p.username,msgStatus)
-            srv.cleanRoom(idRoom)
-        else:
-            message = managerMsg.warning()
-            srv.sendMsg(player.username,message)
+        message = managerMsg.warning()
+        self.srv.sendMsg(player.username,message)
+    
+    # Expulsa a un Jugador de la Sala y notifica a los demas el estado final de la partida
+    def leavePlayer(player,status):
+        msgLeave = managerMsg.leave(player.username)
+        msgStatus = managerMsg.status(status)
+        # Notificar a todos demas jugadores
+        for p in self.players:
+            self.srv.sendMsg(p.username,msgLeave)
+            self.srv.sendMsg(p.username,msgStatus)
+        self.srv.cleanRoom(idRoom)
 
     # ------------------------------------------------  METODOS DE COMANDOS ------------------------------------------------
-
-    # Este metodo implementa el comando de /play card
-    # Realiza la jugada actualizando los historiales, y aplicando la jugada al jugador y al juego
-    # Play: String Ej: 3E (3 de espada), 12C (12 de copa), 1E (1 de espada)
-    def playCommand(player,play):
-        validPlay = player.playCard(play)
-
-        if (validPlay):
-            h = self.historyPlayer
-            self.historyPlayer.insert(len(h),player)
-            h = self.historyPlay
-            self.historyPlay.insert(len(h),play)
-            
-            gameOver = self.game.playCard(player,play)
-            if (gameOver):
-                # El juego termino y notifico a cada jugador que gano y limpio el Room
-                status = self.game.status()
-                msgStatus = self.managerMsg.status(status)
-                msgWinner = self.managerMsg.winner(player.username) # Crea un mensaje con el ganador del juego
-                for p in self.players:
-                    srv.sendMsg(p.username,msgStatus)
-                    srv.sendMsg(p.username,msgWinner)
-                srv.cleanRoom(idRoom)
-            else:
-                self.turn = self.turn + 1
-        else:
-            self.penaltyPlayer(player)
-
+    # Este metodo se encarga de registrar cuando un usuario esta listo para jugar
+    # Estado: A TRABAJAR
+    def readyCommand(username):
+        pass
+    
     # Este metodo implementa el comando de /help
     def helpCommand(username):
-        message = self.managerMsg.helpTruco()
-        srv.sendMsg(username,message)
+        message = self.game.helpTruco()
+        self.srv.sendMsg(username,message)
         return True
 
     # Este metodo implementa el comando /status
     def statusCommand(username):
         message = self.game.status()
-        srv.sendMsg(username,message)
+        self.srv.sendMsg(username,message)
         return True
     
     # Este metodo implementa el comando /history
     def historyCommand(username):
-        srv.sendMsg(username,self.history)
+        self.srv.sendMsg(username,self.history)
         return True
     
     # Este metodo implementa el comando /rules
     def rulesCommand(username):
         rules = self.game.rules()
-        srv.sendMsg(username,rules)
+        self.srv.sendMsg(username,rules)
         return True
 
 
