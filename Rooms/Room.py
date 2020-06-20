@@ -56,6 +56,8 @@ class Room:
         except:
             return False
 
+    # ------------------------------------------------ METODOS USERS ------------------------------------------------
+
     # Este metodo se encarga de agregar un nuevo jugador al Room
     # Ademas de solicitar al Game agregar al nuevo jugador.
     def addPlayer(username):
@@ -76,18 +78,18 @@ class Room:
         self.srv.sendMsg(username,message)
 
     # Notifica a los Jugadores de una Pelanlizacion
-    def penaltyPlayer(player):
+    def penaltyPlayer(username):
         message = managerMsg.warning()
-        self.srv.sendMsg(player.username,message)
+        self.srv.sendMsg(username,message)
     
     # Expulsa a un Jugador de la Sala y notifica a los demas el estado final de la partida
-    def leavePlayer(player,status):
-        msgLeave = managerMsg.leave(player.username)
+    def leavePlayer(username,status):
+        msgLeave = managerMsg.leave(username)
         msgStatus = managerMsg.status(status)
         # Notificar a todos demas jugadores
-        for p in self.players:
-            self.srv.sendMsg(p.username,msgLeave)
-            self.srv.sendMsg(p.username,msgStatus)
+        for user in self.users:
+            self.srv.sendMsg(user,msgLeave)
+            self.srv.sendMsg(user,msgStatus)
         self.srv.cleanRoom(idRoom)
 
     # ------------------------------------------------  METODOS DE COMANDOS ------------------------------------------------
