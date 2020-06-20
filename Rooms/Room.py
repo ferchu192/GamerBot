@@ -9,9 +9,9 @@ class Room:
     def _init_(self, idR, cant, server):
         self.idRoom = idR
         self.state = "Free"
-        self.cantPlayers = cant
-        self.players = [self.cantPlayers]
-        self.currentPlayers = 0
+        self.cantUsers = cant # Cantidad maxima de USUARIOS != JUGADORES
+        self.users = [self.cantUsers] # Arreglo de los USUARIOS en la sala
+        self.currentUsers = 0 # Cantidad de USUARIOS actuales en la sala
         self.srv = server
         self.game = Game()
         self.managerMsg = MsgFactory(idR)
@@ -24,61 +24,23 @@ class Room:
         c5 = "/rules"
         self.commands = {c1: readyCommand(), c2: helpCommand(), c3: statusCommand(), c4: historyCommand(), c5: rulesCommand()}
 
-    # Este metodo se encarga de agregar un nuevo jugador al Room
-    def addPlayer(username):
-        message = ""
-        if(self.state != "Full"):
-            player = Player(username,self.idRoom)
-            self.players[self.currentPlayers] = player
-            self.currentPlayers = self.currentPlayers + 1
-            
-            if (self.currentPlayers == self.cantPlayers):
-                self.state = "Full"
-            message = managerMsg.addPlayer()
-        else:
-            message = managerMsg.fullRoom()
-        self.srv.sendMsg(username,message)
-
     # Este metodo es el cual recibe los mensajes del servidor
-    def reciveMsg(Msg):
-        valid = self.validMsg(Msg)
-        if not(valid):
-            self.penaltyPlayer(player)
-
+    # y responde el resultado de ejecutar el mensaje al servidor
     # El ojetivo de esta funcion es la de validar el mensaje Msg y en caso de ser un Comando lo ejecuta
-    # Return: True (si todo funciono) - False (si algo fallo)
-    def validMsg(Msg):
-        sender = Msg.username
+    def reciveMsg(Msg):
+        mensaje = ""
+        sender = self.users[Msg.username]
         text = Msg.text
-        end = False
-        i = 0
-        # Chequeo que el mensaje proviene de un usuario que esta en la sala
-        existPlayer = self.searchPlayer(sender)
-        if (existPlayer == NULL)
-            return False
+        if (sender == NULL):
+            mensaje = self.managerMsg.invalidUser()
         else:
             # ACA DEBE IR LA LOGICA DE EVALUAR SI ES O NO UN COMANDO
             command = self.searchCommand(sender,text)
             if(command == NULL):
-                gameCommand = self.game.executeCommand(text)
-                return gameCommand
+                gameMessage = self.game.executeCommand(sender,text)
             else:
-                return command
-
-    # Busca a partir de un username(String) el Player
-    def searchPlayer(sender):
-        i = 0
-        end = False
-        player = ""
-        while ((i != self.cantPlayers) and (not end)):
-            player = self.players[i]
-            if(player.username == sender):
-                end = True
-            i = i + 1
-        if end:
-            return player
-        else:
-            return NULL
+                mensaje = self.managerMsg.invalidInput()
+        self.srv.sendMsg(Msg.username,mensaje)
 
     # Busca a partir del texto(String) el Comando al que corresponde
     # Return: True (si todo funciono) - False (si algo fallo)
@@ -93,6 +55,25 @@ class Room:
             return self.commands[arg0](sender)
         except:
             return False
+
+    # Este metodo se encarga de agregar un nuevo jugador al Room
+    # Ademas de solicitar al Game agregar al nuevo jugador.
+    def addPlayer(username):
+        message = ""
+        if(self.state != "Full"):
+            operationOk = self.game.addPlayer(username)
+            if(operationOk):
+                self.users[self.currentUsers] = username
+                self.currentUsers = self.currentUsers + 1
+                # De momento se van a llevar la misma cantidad en ambas clases (Game-Room), pero en un futuro estaran para poder ver espectadores o suplenetes
+                if (self.currentUsers == self.cantUsers):
+                    self.state = "Full"
+                message = managerMsg.addPlayer()
+            else:
+                message = managerMsg.fullRoom()
+        else:
+            message = managerMsg.fullRoom()
+        self.srv.sendMsg(username,message)
 
     # Notifica a los Jugadores de una Pelanlizacion
     def penaltyPlayer(player):
@@ -117,7 +98,7 @@ class Room:
     
     # Este metodo implementa el comando de /help
     def helpCommand(username):
-        message = self.game.helpTruco()
+        message = self.game.help()
         self.srv.sendMsg(username,message)
         return True
 
